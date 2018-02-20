@@ -389,20 +389,20 @@ export var getDateAxis = function(start_time, end_time, granularity, opts, dg) {
   // by setting the start_date_offset to 0.
   var start_date = new Date(start_time);
   var date_array = [];
-  date_array[DateField.DATEFIELD_Y]  = accessors.getFullYear(start_date);
-  date_array[DateField.DATEFIELD_M]  = accessors.getMonth(start_date);
-  date_array[DateField.DATEFIELD_D]  = accessors.getDate(start_date);
-  date_array[DateField.DATEFIELD_HH] = accessors.getHours(start_date);
-  date_array[DateField.DATEFIELD_MM] = accessors.getMinutes(start_date);
-  date_array[DateField.DATEFIELD_SS] = accessors.getSeconds(start_date);
-  date_array[DateField.DATEFIELD_MS] = accessors.getMilliseconds(start_date);
+  date_array[DateField.DATEFIELD_Y]  = utils.DateAccessorsUTC.getFullYear(start_date);
+  date_array[DateField.DATEFIELD_M]  = utils.DateAccessorsUTC.getMonth(start_date);
+  date_array[DateField.DATEFIELD_D]  = utils.DateAccessorsUTC.getDate(start_date);
+  date_array[DateField.DATEFIELD_HH] = utils.DateAccessorsUTC.getHours(start_date);
+  date_array[DateField.DATEFIELD_MM] = utils.DateAccessorsUTC.getMinutes(start_date);
+  date_array[DateField.DATEFIELD_SS] = utils.DateAccessorsUTC.getSeconds(start_date);
+  date_array[DateField.DATEFIELD_MS] = utils.DateAccessorsUTC.getMilliseconds(start_date);
 
   var start_date_offset = date_array[datefield] % step;
   if (granularity == Granularity.WEEKLY) {
     // This will put the ticks on Sundays.
     start_date_offset = accessors.getDay(start_date);
   }
-  
+
   date_array[datefield] -= start_date_offset;
   for (var df = datefield + 1; df < DateField.NUM_DATEFIELDS; df++) {
     // The minimum value is 1 for the day of month, and 0 for all other fields.
@@ -423,7 +423,7 @@ export var getDateAxis = function(start_time, end_time, granularity, opts, dg) {
   // Hence we have to check that the date is properly increased at each step,
   // returning a date at a nice tick position.
   var ticks = [];
-  var tick_date = accessors.makeDate.apply(null, date_array);
+  var tick_date = utils.DateAccessorsUTC.makeDate.apply(null, date_array);
   var tick_time = tick_date.getTime();
   if (granularity <= Granularity.HOURLY) {
     if (tick_time < start_time) {
@@ -440,7 +440,7 @@ export var getDateAxis = function(start_time, end_time, granularity, opts, dg) {
   } else {
     if (tick_time < start_time) {
       date_array[datefield] += step;
-      tick_date = accessors.makeDate.apply(null, date_array);
+      tick_date = utils.DateAccessorsUTC.makeDate.apply(null, date_array);
       tick_time = tick_date.getTime();
     }
     while (tick_time <= end_time) {
@@ -451,7 +451,7 @@ export var getDateAxis = function(start_time, end_time, granularity, opts, dg) {
                    });
       }
       date_array[datefield] += step;
-      tick_date = accessors.makeDate.apply(null, date_array);
+      tick_date = utils.DateAccessorsUTC.makeDate.apply(null, date_array);
       tick_time = tick_date.getTime();
     }
   }
