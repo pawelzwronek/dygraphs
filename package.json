@@ -11,7 +11,8 @@
     "docs",
     "dist",
     "src",
-    "src-es5"
+    "src-es5",
+    "css"
   ],
   "repository": {
     "type": "git",
