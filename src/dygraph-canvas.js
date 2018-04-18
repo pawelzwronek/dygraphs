@@ -74,6 +74,7 @@ var DygraphCanvasRenderer = function(dygraph, element, elementContext, layout) {
   ctx.clip();
 
   ctx = this.dygraph_.hidden_ctx_;
+  ctx.clearRect(0, 0, this.width, this.height);
   ctx.beginPath();
   ctx.rect(this.area.x, this.area.y, this.area.w, this.area.h);
   ctx.clip();
