@@ -328,7 +328,7 @@ DygraphLayout.prototype._evaluateAnnotations = function() {
     for (i = 0; i < points.length; i++) {
       var p = points[i];
       var k = p.xval + "," + p.name;
-      if (k in annotations) {
+      if (k in annotations && p.yval != undefined) {
         p.annotation = annotations[k];
         this.annotated_points.push(p);
       }
