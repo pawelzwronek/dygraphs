@@ -128,6 +128,7 @@ Dygraph.addedAnnotationCSS = false;
 Dygraph.prototype.__init__ = function(div, file, attrs) {
   this.is_initial_draw_ = true;
   this.readyFns_ = [];
+  this._ctx_save_cnt = 0;
 
   // Support two-argument constructor
   if (attrs === null || attrs === undefined) { attrs = {}; }
@@ -2027,13 +2028,9 @@ Dygraph.prototype.predraw_ = function() {
   // TODO(danvk): move more computations out of drawGraph_ and into here.
   this.computeYAxes_();
 
-  if (!this.is_initial_draw_) {
-    this.canvas_ctx_.restore();
-    this.hidden_ctx_.restore();
-  }
-
   this.canvas_ctx_.save();
   this.hidden_ctx_.save();
+  this._ctx_save_cnt++;
 
   // Create a new plotter.
   this.plotter_ = new DygraphCanvasRenderer(this,
@@ -2350,6 +2347,13 @@ Dygraph.prototype.drawGraph_ = function() {
   if (this.getStringOption("timingName")) {
     var end = new Date();
     console.log(this.getStringOption("timingName") + " - drawGraph: " + (end - start) + "ms");
+  }
+
+  // restore all saved context states
+  while(this._ctx_save_cnt > 0) {
+    this._ctx_save_cnt--;
+    this.canvas_ctx_.restore();
+    this.hidden_ctx_.restore();
   }
 };
 
