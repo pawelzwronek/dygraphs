@@ -307,14 +307,6 @@ DygraphLayout.prototype._evaluateLineTicks = function() {
 
 DygraphLayout.prototype._evaluateAnnotations = function() {
   // Add the annotations to the point to which they belong.
-  // Make a map from (setName, xval) to annotation for quick lookups.
-  var i;
-  var annotations = {};
-  for (i = 0; i < this.annotations.length; i++) {
-    var a = this.annotations[i];
-    annotations[a.xval + "," + a.series] = a;
-  }
-
   this.annotated_points = [];
 
   // Exit the function early if there are no annotations.
@@ -322,18 +314,20 @@ DygraphLayout.prototype._evaluateAnnotations = function() {
     return;
   }
 
-  // TODO(antrob): loop through annotations not points.
-  for (var setIdx = 0; setIdx < this.points.length; setIdx++) {
-    var points = this.points[setIdx];
-    for (i = 0; i < points.length; i++) {
-      var p = points[i];
-      var k = p.xval + "," + p.name;
-      if (k in annotations && p.yval != undefined) {
-        p.annotation = annotations[k];
-        this.annotated_points.push(p);
-      }
-    }
-  }
+  this.annotations.forEach(a => {
+    this.points.forEach(points => {
+        if (points && points.length > 0 && points[0].name == a.series) {
+            for (let i = 0; i < points.length; i++) {
+                let p = points[i];
+                if (p.yval != undefined && p.xval == a.xval) {
+                    p.annotation = a;
+                    this.annotated_points.push(p);
+                    break;
+                }
+            }
+        }
+    })
+  })
 };
 
 /**
