@@ -129,6 +129,7 @@ Dygraph.prototype.__init__ = function(div, file, attrs) {
   this.is_initial_draw_ = true;
   this.readyFns_ = [];
   this._ctx_save_cnt = 0;
+  this.canvas_scale = 1;
 
   // Support two-argument constructor
   if (attrs === null || attrs === undefined) { attrs = {}; }
@@ -601,7 +602,7 @@ Dygraph.prototype.toDomXCoord = function(x) {
 
   var area = this.plotter_.area;
   var xRange = this.xAxisRange();
-  return area.x + (x - xRange[0]) / (xRange[1] - xRange[0]) * area.w;
+  return (area.x + (x - xRange[0]) / (xRange[1] - xRange[0]) * area.w) / this.canvas_scale;
 };
 
 /**
@@ -617,7 +618,7 @@ Dygraph.prototype.toDomYCoord = function(y, axis) {
     return null;
   }
   var area = this.plotter_.area;
-  return area.y + pct * area.h;
+  return (area.y + pct * area.h) / this.canvas_scale;
 };
 
 /**
@@ -647,9 +648,9 @@ Dygraph.prototype.toDataXCoord = function(x) {
   var xRange = this.xAxisRange();
 
   if (!this.attributes_.getForAxis("logscale", 'x')) {
-    return xRange[0] + (x - area.x) / area.w * (xRange[1] - xRange[0]);
+    return xRange[0] + (x * this.canvas_scale - area.x) / area.w * (xRange[1] - xRange[0]);
   } else {
-    var pct = (x - area.x) / area.w;
+    var pct = (x * this.canvas_scale - area.x) / area.w;
     return utils.logRangeFraction(xRange[0], xRange[1], pct);
   }
 };
@@ -670,10 +671,10 @@ Dygraph.prototype.toDataYCoord = function(y, axis) {
 
   if (typeof(axis) == "undefined") axis = 0;
   if (!this.attributes_.getForAxis("logscale", axis)) {
-    return yRange[0] + (area.y + area.h - y) / area.h * (yRange[1] - yRange[0]);
+    return yRange[0] + (area.y + area.h - y * this.canvas_scale) / area.h * (yRange[1] - yRange[0]);
   } else {
     // Computing the inverse of toDomCoord.
-    var pct = (y - area.y) / area.h;
+    var pct = (y * this.canvas_scale - area.y) / area.h;
     // Note reversed yRange, y1 is on top with pct==0.
     return utils.logRangeFraction(yRange[1], yRange[0], pct);
   }
@@ -813,6 +814,7 @@ Dygraph.prototype.createInterface_ = function() {
 
   this.canvas_ctx_ = utils.getContext(this.canvas_);
   this.hidden_ctx_ = utils.getContext(this.hidden_);
+  this.canvas_scale = this.getNumericOption('pixelRatio') || utils.getContextPixelRatio(this.canvas_ctx_);
 
   this.resizeElements_();
 
@@ -862,24 +864,20 @@ Dygraph.prototype.resizeElements_ = function() {
   this.graphDiv.style.width = this.width_ + "px";
   this.graphDiv.style.height = this.height_ + "px";
 
-  var pixelRatioOption = this.getNumericOption('pixelRatio')
-
-  var canvasScale = pixelRatioOption || utils.getContextPixelRatio(this.canvas_ctx_);
-  this.canvas_.width = this.width_ * canvasScale;
-  this.canvas_.height = this.height_ * canvasScale;
-  this.canvas_.style.width = this.width_ + "px";    // for IE
-  this.canvas_.style.height = this.height_ + "px";  // for IE
-  if (canvasScale !== 1) {
-    this.canvas_ctx_.scale(canvasScale, canvasScale);
+  this.canvas_.width = Math.round(this.width_);
+  this.canvas_.height = Math.round(this.height_);
+  this.canvas_.style.width = this.width_ / this.canvas_scale + "px";    // for IE
+  this.canvas_.style.height = this.height_ / this.canvas_scale + "px";  // for IE
+  if (this.canvas_scale !== 1) {
+    // this.canvas_ctx_.scale(1/this.canvas_scale, 1/this.canvas_scale);
   }
 
-  var hiddenScale = pixelRatioOption || utils.getContextPixelRatio(this.hidden_ctx_);
-  this.hidden_.width = this.width_ * hiddenScale;
-  this.hidden_.height = this.height_ * hiddenScale;
-  this.hidden_.style.width = this.width_ + "px";    // for IE
-  this.hidden_.style.height = this.height_ + "px";  // for IE
-  if (hiddenScale !== 1) {
-    this.hidden_ctx_.scale(hiddenScale, hiddenScale);
+  this.hidden_.width = Math.round(this.width_);
+  this.hidden_.height = Math.round(this.height_);
+  this.hidden_.style.width = this.width_ / this.canvas_scale + "px";    // for IE
+  this.hidden_.style.height = this.height_ / this.canvas_scale + "px";  // for IE
+  if (this.canvas_scale !== 1) {
+    // this.hidden_ctx_.scale(1/this.hiddenScale, 1/this.hiddenScale);
   }
 };
 
@@ -1463,12 +1461,12 @@ Dygraph.prototype.getArea = function() {
  */
 Dygraph.prototype.eventToDomCoords = function(event) {
   if (event.offsetX && event.offsetY) {
-    return [ event.offsetX, event.offsetY ];
+    return [event.offsetX * this.canvas_scale, event.offsetY * this.canvas_scale];
   } else {
     var eventElementPos = utils.findPos(this.mouseEventElement_);
     var canvasx = utils.pageX(event) - eventElementPos.x;
     var canvasy = utils.pageY(event) - eventElementPos.y;
-    return [canvasx, canvasy];
+    return [canvasx * this.canvas_scale, canvasy * this.canvas_scale];
   }
 };
 
@@ -3231,6 +3229,7 @@ Dygraph.prototype.resize = function(width, height) {
     return;
   }
   this.resize_lock = true;
+  this.canvas_scale = this.getNumericOption('pixelRatio') || utils.getContextPixelRatio(this.canvas_ctx_);
 
   if ((width === null) != (height === null)) {
     console.warn("Dygraph.resize() should be called with zero parameters or " +
@@ -3247,9 +3246,12 @@ Dygraph.prototype.resize = function(width, height) {
     this.width_ = width;
     this.height_ = height;
   } else {
-    this.width_ = this.maindiv_.clientWidth;
-    this.height_ = this.maindiv_.clientHeight;
+    this.width_ = this.maindiv_.clientWidth * this.canvas_scale;
+    this.height_ = this.maindiv_.clientHeight * this.canvas_scale;
   }
+
+  this.width_ = Math.round(this.width_);
+  this.height_ = Math.round(this.height_);
 
   if (old_width != this.width_ || old_height != this.height_) {
     // Resizing a canvas erases it, even when the size doesn't change, so

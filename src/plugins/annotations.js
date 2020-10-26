@@ -111,7 +111,7 @@ annotations.prototype.didDrawChart = function(e) {
     } else if (p.annotation.hasOwnProperty('shortText')) {
       div.appendChild(document.createTextNode(p.annotation.shortText));
     }
-    var left = p.canvasx - width / 2;
+    var left = (p.canvasx / g.canvas_scale - width / 2);
     div.style.left = left + "px";
     var divTop = 0;
     if (a.attachAtBottom) {
@@ -126,6 +126,7 @@ annotations.prototype.didDrawChart = function(e) {
     } else {
       divTop = p.canvasy - height - tick_height;
     }
+    divTop /= g.canvas_scale;
     div.style.top = divTop + "px";
     div.style.width = width + "px";
     div.style.height = height + "px";
